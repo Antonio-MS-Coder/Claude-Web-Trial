@@ -88,13 +88,23 @@ struct AddContentView: View {
             }
             .overlay {
                 if isProcessing {
-                    ProcessingOverlay()
+                    ProcessingOverlay(contentType: selectedType)
                 }
             }
-            .alert("Error", isPresented: $showingError) {
-                Button("OK", role: .cancel) {}
+            .alert("Unable to Add Content", isPresented: $showingError) {
+                Button("OK", role: .cancel) {
+                    let generator = UINotificationFeedbackGenerator()
+                    generator.notificationOccurred(.warning)
+                }
+                if selectedType == .webpage {
+                    Button("Try Again") {
+                        Task {
+                            await processContent()
+                        }
+                    }
+                }
             } message: {
-                Text(errorMessage ?? "An error occurred")
+                Text(getActionableErrorMessage())
             }
         }
     }
@@ -171,12 +181,21 @@ struct AddContentView: View {
 
             contentStore.addItem(item)
             isProcessing = false
+
+            // Success feedback
+            let generator = UINotificationFeedbackGenerator()
+            generator.notificationOccurred(.success)
+
             dismiss()
 
         } catch {
             isProcessing = false
             errorMessage = error.localizedDescription
             showingError = true
+
+            // Error feedback
+            let generator = UINotificationFeedbackGenerator()
+            generator.notificationOccurred(.error)
         }
     }
 
@@ -184,6 +203,37 @@ struct AddContentView: View {
         let words = text.prefix(100).split(separator: " ")
         let title = words.prefix(8).joined(separator: " ")
         return title.isEmpty ? "Untitled" : title + (words.count > 8 ? "..." : "")
+    }
+
+    private func getActionableErrorMessage() -> String {
+        guard let errorMessage = errorMessage else {
+            return "An unexpected error occurred. Please try again."
+        }
+
+        // Provide helpful, actionable error messages
+        switch selectedType {
+        case .pdf:
+            return "Unable to extract text from PDF. Make sure the PDF contains readable text and is not scanned images only."
+
+        case .webpage:
+            if errorMessage.contains("Invalid URL") || errorMessage.contains("invalid") {
+                return "Please check the URL and make sure it's complete (e.g., https://example.com/article)"
+            } else if errorMessage.contains("network") || errorMessage.contains("Internet") {
+                return "Unable to load web page. Check your internet connection and try again."
+            } else {
+                return "Unable to extract content from this web page. Some websites may block automated access."
+            }
+
+        case .image:
+            if errorMessage.contains("no text") || errorMessage.contains("No text") {
+                return "No text detected in the image. Make sure the image contains clear, readable text."
+            } else {
+                return "Unable to process the image. Try selecting a clearer image with visible text."
+            }
+
+        case .text:
+            return "Unable to add text. Make sure you've entered some content."
+        }
     }
 }
 
@@ -282,23 +332,73 @@ struct ImageInputSection: View {
 // MARK: - Processing Overlay
 
 struct ProcessingOverlay: View {
+    let contentType: ContentType
+
     var body: some View {
         ZStack {
-            Color.black.opacity(0.4)
+            Color.black.opacity(0.5)
                 .ignoresSafeArea()
 
-            VStack(spacing: 20) {
-                ProgressView()
-                    .scaleEffect(1.5)
-                    .tint(.white)
+            VStack(spacing: 24) {
+                // Animated icon
+                ZStack {
+                    Circle()
+                        .fill(contentType.color.opacity(0.2))
+                        .frame(width: 80, height: 80)
 
-                Text("Processing...")
-                    .font(.headline)
-                    .foregroundColor(.white)
+                    Image(systemName: contentType.icon)
+                        .font(.largeTitle)
+                        .foregroundColor(contentType.color)
+                        .symbolEffect(.pulse, options: .repeating)
+                }
+
+                VStack(spacing: 8) {
+                    Text(processingTitle)
+                        .font(.headline)
+                        .foregroundColor(.white)
+
+                    Text(processingSubtitle)
+                        .font(.subheadline)
+                        .foregroundColor(.white.opacity(0.8))
+                        .multilineTextAlignment(.center)
+                }
+
+                ProgressView()
+                    .tint(.white)
             }
             .padding(40)
-            .background(Color(.systemGray))
-            .cornerRadius(20)
+            .background(
+                RoundedRectangle(cornerRadius: 24)
+                    .fill(Color(.systemGray).opacity(0.95))
+                    .shadow(color: .black.opacity(0.3), radius: 20)
+            )
+            .padding(.horizontal, 40)
+        }
+    }
+
+    private var processingTitle: String {
+        switch contentType {
+        case .text:
+            return "Processing Text"
+        case .webpage:
+            return "Fetching Web Page"
+        case .pdf:
+            return "Extracting PDF"
+        case .image:
+            return "Reading Image"
+        }
+    }
+
+    private var processingSubtitle: String {
+        switch contentType {
+        case .text:
+            return "Preparing your text for playback..."
+        case .webpage:
+            return "Downloading and extracting content..."
+        case .pdf:
+            return "Extracting text from PDF..."
+        case .image:
+            return "Using OCR to detect text..."
         }
     }
 }

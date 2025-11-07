@@ -13,6 +13,9 @@ struct LibraryView: View {
     @State private var showingAddContent = false
     @State private var searchText = ""
     @State private var selectedFilter: ContentType?
+    @State private var showFullPlayer = false
+    @State private var deletedItem: ContentItem?
+    @State private var showingUndo = false
 
     var filteredItems: [ContentItem] {
         var items = contentStore.items
@@ -32,7 +35,8 @@ struct LibraryView: View {
 
     var body: some View {
         NavigationView {
-            VStack(spacing: 0) {
+            ZStack(alignment: .bottom) {
+                VStack(spacing: 0) {
                 // Filter chips
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: 12) {
@@ -59,55 +63,114 @@ struct LibraryView: View {
 
                 Divider()
 
-                // Content list
-                if filteredItems.isEmpty {
-                    EmptyLibraryView()
-                } else {
-                    List {
-                        ForEach(filteredItems) { item in
-                            ContentItemRow(item: item)
-                                .contentShape(Rectangle())
-                                .onTapGesture {
-                                    audioPlayer.play(item, from: item.lastPlayedPosition)
-                                }
-                                .swipeActions(edge: .trailing, allowsFullSwipe: true) {
-                                    Button(role: .destructive) {
-                                        withAnimation {
-                                            contentStore.deleteItem(item)
+                    // Content list
+                    if filteredItems.isEmpty {
+                        EmptyLibraryView(showingAddContent: $showingAddContent)
+                    } else {
+                        List {
+                            ForEach(filteredItems) { item in
+                                ContentItemRow(item: item)
+                                    .contentShape(Rectangle())
+                                    .onTapGesture {
+                                        let generator = UIImpactFeedbackGenerator(style: .medium)
+                                        generator.impactOccurred()
+                                        withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
+                                            audioPlayer.play(item, from: item.lastPlayedPosition)
                                         }
-                                    } label: {
-                                        Label("Delete", systemImage: "trash")
                                     }
-                                }
-                                .swipeActions(edge: .leading, allowsFullSwipe: true) {
-                                    Button {
-                                        withAnimation {
-                                            contentStore.toggleFavorite(item)
+                                    .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+                                        Button(role: .destructive) {
+                                            deleteItem(item)
+                                        } label: {
+                                            Label("Delete", systemImage: "trash")
                                         }
-                                    } label: {
-                                        Label("Favorite", systemImage: item.isFavorite ? "star.slash" : "star.fill")
                                     }
-                                    .tint(.yellow)
-                                }
+                                    .swipeActions(edge: .leading, allowsFullSwipe: true) {
+                                        Button {
+                                            let generator = UINotificationFeedbackGenerator()
+                                            generator.notificationOccurred(.success)
+                                            withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                                                contentStore.toggleFavorite(item)
+                                            }
+                                        } label: {
+                                            Label("Favorite", systemImage: item.isFavorite ? "star.slash" : "star.fill")
+                                        }
+                                        .tint(.yellow)
+                                    }
+                            }
+                        }
+                        .listStyle(.plain)
+                    }
+                }
+                .navigationTitle("AudioReader")
+                .searchable(text: $searchText, prompt: "Search content")
+                .toolbar {
+                    ToolbarItem(placement: .navigationBarTrailing) {
+                        Button {
+                            let generator = UIImpactFeedbackGenerator(style: .light)
+                            generator.impactOccurred()
+                            showingAddContent = true
+                        } label: {
+                            Image(systemName: "plus.circle.fill")
+                                .font(.title2)
                         }
                     }
-                    .listStyle(.plain)
+                }
+                .sheet(isPresented: $showingAddContent) {
+                    AddContentView()
+                }
+
+                // Mini Player
+                if audioPlayer.currentItem != nil {
+                    MiniPlayerView(showFullPlayer: $showFullPlayer)
+                        .padding(.bottom, audioPlayer.currentItem != nil ? 0 : -100)
                 }
             }
-            .navigationTitle("AudioReader")
-            .searchable(text: $searchText, prompt: "Search content")
-            .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button {
-                        showingAddContent = true
-                    } label: {
-                        Image(systemName: "plus.circle.fill")
-                            .font(.title2)
-                    }
+            .overlay {
+                if showingUndo, let deletedItem = deletedItem {
+                    UndoToast(
+                        message: "Deleted \(deletedItem.title)",
+                        onUndo: {
+                            undoDelete()
+                        }
+                    )
+                    .padding(.bottom, audioPlayer.currentItem != nil ? 70 : 20)
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
                 }
             }
-            .sheet(isPresented: $showingAddContent) {
-                AddContentView()
+            .sheet(isPresented: $showFullPlayer) {
+                PlayerView()
+            }
+        }
+    }
+
+    private func deleteItem(_ item: ContentItem) {
+        let generator = UINotificationFeedbackGenerator()
+        generator.notificationOccurred(.warning)
+
+        withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
+            deletedItem = item
+            contentStore.deleteItem(item)
+            showingUndo = true
+        }
+
+        // Auto-hide undo after 5 seconds
+        DispatchQueue.main.asyncAfter(deadline: .now() + 5) {
+            withAnimation {
+                showingUndo = false
+            }
+        }
+    }
+
+    private func undoDelete() {
+        let generator = UINotificationFeedbackGenerator()
+        generator.notificationOccurred(.success)
+
+        if let item = deletedItem {
+            withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
+                contentStore.addItem(item)
+                showingUndo = false
+                deletedItem = nil
             }
         }
     }
@@ -207,23 +270,80 @@ struct FilterChip: View {
 // MARK: - Empty State
 
 struct EmptyLibraryView: View {
+    @Binding var showingAddContent: Bool
+
     var body: some View {
-        VStack(spacing: 20) {
+        VStack(spacing: 24) {
             Image(systemName: "books.vertical")
-                .font(.system(size: 64))
+                .font(.system(size: 72))
                 .foregroundColor(.secondary)
+                .symbolEffect(.pulse, options: .repeating)
 
-            Text("No Content Yet")
-                .font(.title2)
-                .fontWeight(.semibold)
+            VStack(spacing: 12) {
+                Text("No Content Yet")
+                    .font(.title2)
+                    .fontWeight(.semibold)
 
-            Text("Tap the + button to add PDFs, web pages, text, or images")
-                .font(.body)
-                .foregroundColor(.secondary)
-                .multilineTextAlignment(.center)
-                .padding(.horizontal, 40)
+                Text("Tap the + button to add PDFs, web pages, text, or images to start listening")
+                    .font(.body)
+                    .foregroundColor(.secondary)
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, 40)
+            }
+
+            Button {
+                let generator = UIImpactFeedbackGenerator(style: .medium)
+                generator.impactOccurred()
+                showingAddContent = true
+            } label: {
+                Label("Add Content", systemImage: "plus.circle.fill")
+                    .font(.headline)
+                    .foregroundColor(.white)
+                    .padding(.horizontal, 24)
+                    .padding(.vertical, 12)
+                    .background(Color.blue)
+                    .cornerRadius(12)
+            }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+}
+
+// MARK: - Undo Toast
+
+struct UndoToast: View {
+    let message: String
+    let onUndo: () -> Void
+
+    var body: some View {
+        VStack {
+            Spacer()
+
+            HStack {
+                Image(systemName: "trash")
+                    .foregroundColor(.white)
+
+                Text(message)
+                    .font(.subheadline)
+                    .foregroundColor(.white)
+                    .lineLimit(1)
+
+                Spacer()
+
+                Button("Undo") {
+                    onUndo()
+                }
+                .font(.subheadline)
+                .fontWeight(.semibold)
+                .foregroundColor(.yellow)
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 12)
+            .background(Color(.darkGray))
+            .cornerRadius(12)
+            .shadow(color: .black.opacity(0.3), radius: 10, x: 0, y: 4)
+            .padding(.horizontal)
+        }
     }
 }
 

@@ -6,7 +6,7 @@
   <img src="https://img.shields.io/badge/Framework-SwiftUI-green.svg" alt="SwiftUI">
 </p>
 
-AudioReader is a modern, intuitive iOS app that converts various content types into audio, perfect for listening to articles, documents, and text while driving, exercising, or multitasking.
+AudioReader is a modern, **human-centric** iOS app that converts various content types into audio, perfect for listening to articles, documents, and text while driving, exercising, or multitasking.
 
 ## Features
 
@@ -17,15 +17,34 @@ AudioReader is a modern, intuitive iOS app that converts various content types i
 - **Images** - OCR text extraction from photos using Apple Vision framework
 
 ### Key Features
+
+#### Audio & Playback
+- **Background Audio Playback** - Keep listening when the app is backgrounded or screen is locked (perfect for driving!)
+- **Lock Screen Controls** - Full media controls on lock screen and control center
+- **CarPlay Ready** - Remote control support for safe in-car use
 - **High-Quality Text-to-Speech** - Uses Apple's AVSpeechSynthesizer with premium voices
 - **Smart Playback Controls** - Play, pause, skip forward/backward (15 seconds)
 - **Variable Speed** - Adjust playback speed from 0.75x to 2.0x
+- **Auto-Play Next** - Automatically continue to next item in queue
 - **Resume Playback** - Automatically saves your position in each content item
+
+#### User Experience
+- **Intuitive Onboarding** - Beautiful first-time experience explaining key features
+- **Mini Player** - Quick access player stays at bottom while browsing library
+- **Haptic Feedback** - Tactile responses for all interactions
+- **Smooth Animations** - Spring-based animations throughout
+- **Undo Delete** - Safety net with 5-second undo for accidental deletions
+- **Smart Loading States** - Context-aware processing indicators
+- **Actionable Error Messages** - Clear, helpful error messages with retry options
+- **Empty States** - Encouraging guidance when library is empty
+
+#### Organization
 - **Beautiful UI** - Modern, intuitive SwiftUI interface with color-coded content types
 - **Content Library** - Organize and manage all your audio content
 - **Favorites** - Star your favorite content for quick access
 - **Search & Filter** - Easily find content by type or search term
 - **Persistent Storage** - All content saved locally for offline access
+- **Smart Titles** - Auto-generated titles from content
 
 ## Architecture
 
@@ -40,23 +59,27 @@ AudioReader/
 │   ├── PDFExtractor.swift      # PDF text extraction using PDFKit
 │   ├── WebExtractor.swift      # Web content extraction
 │   ├── ImageTextExtractor.swift # OCR using Vision framework
-│   └── AudioPlayerManager.swift # Text-to-speech playback manager
+│   └── AudioPlayerManager.swift # Text-to-speech + background audio
 └── Views/
-    ├── ContentView.swift       # Main tab navigation
-    ├── LibraryView.swift       # Content library with search & filters
-    ├── PlayerView.swift        # Audio player interface
-    └── AddContentView.swift    # Content import interface
+    ├── ContentView.swift       # Main app with onboarding
+    ├── LibraryView.swift       # Content library with mini player
+    ├── PlayerView.swift        # Full-screen audio player
+    ├── AddContentView.swift    # Content import with smart loading
+    ├── MiniPlayerView.swift    # Compact bottom player
+    └── OnboardingView.swift    # First-time user experience
 ```
 
 ## Technology Stack
 
-- **SwiftUI** - Modern declarative UI framework
+- **SwiftUI** - Modern declarative UI framework with animations
 - **Combine** - Reactive programming for state management
-- **AVFoundation** - Audio playback and text-to-speech
+- **AVFoundation** - Audio playback, text-to-speech, and background audio
+- **MediaPlayer** - Now Playing info and remote control commands
+- **UIKit** - Haptic feedback and advanced UI components
 - **PDFKit** - PDF text extraction
 - **Vision** - OCR for image text recognition
 - **URLSession** - Web content fetching
-- **UserDefaults** - Persistent storage
+- **UserDefaults** - Persistent storage with AppStorage
 
 ## Requirements
 
@@ -138,10 +161,19 @@ AudioReader leverages Apple's on-device intelligence features:
 
 ## Roadmap
 
-Future enhancements planned:
+Completed:
+- [x] Background audio playback with lock screen controls
+- [x] Remote control support (CarPlay-ready)
+- [x] Mini player for quick access
+- [x] Onboarding experience
+- [x] Haptic feedback throughout
+- [x] Undo delete functionality
+- [x] Auto-play next feature
+- [x] Smart error messages
+- [x] Beautiful loading states
 
-- [ ] Background audio playback
-- [ ] CarPlay support for safer driving integration
+Future enhancements planned:
+- [ ] Full CarPlay native UI
 - [ ] iCloud sync across devices
 - [ ] Export audio files
 - [ ] Podcast-style queue management
@@ -150,14 +182,14 @@ Future enhancements planned:
 - [ ] Share extension for Safari
 - [ ] Widget for quick access to recent content
 - [ ] Siri shortcuts integration
+- [ ] VoiceOver accessibility improvements
 
 ## Known Limitations
 
-1. **PDF Import**: Currently requires implementation of document picker
+1. **PDF Import**: Currently requires implementation of document picker (placeholder in UI)
 2. **Web Extraction**: Basic HTML parsing; may not work perfectly with all websites
 3. **OCR Accuracy**: Depends on image quality and text clarity
-4. **Playback Position**: Estimated based on text length (not exact)
-5. **No Background Play**: Audio stops when app is backgrounded
+4. **Playback Position**: Estimated based on text length (not exact timing)
 
 ## Contributing
 
