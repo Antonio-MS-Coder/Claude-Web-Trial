@@ -222,7 +222,7 @@ struct ContentItemRow: View {
                     HStack(spacing: 4) {
                         Image(systemName: "globe")
                             .font(.caption)
-                        Text(item.detectedLanguage.uppercased())
+                        Text(item.effectiveLanguage.uppercased())
                             .font(.caption)
                             .fontWeight(.medium)
                     }

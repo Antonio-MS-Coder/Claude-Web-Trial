@@ -128,6 +128,13 @@ struct PlayerView: View {
                         }
                         .padding(.horizontal)
 
+                        // Language selection
+                        LanguageSelector(item: item)
+                            .environmentObject(contentStore)
+                            .environmentObject(audioPlayer)
+                            .padding(.horizontal)
+                            .padding(.top, 8)
+
                         // Content preview
                         VStack(alignment: .leading, spacing: 12) {
                             Text("Content")
@@ -158,6 +165,202 @@ struct PlayerView: View {
         let minutes = Int(time) / 60
         let seconds = Int(time) % 60
         return String(format: "%d:%02d", minutes, seconds)
+    }
+}
+
+// MARK: - Language Selector
+
+struct LanguageSelector: View {
+    let item: ContentItem
+    @EnvironmentObject var contentStore: ContentStore
+    @EnvironmentObject var audioPlayer: AudioPlayerManager
+    @State private var showingLanguagePicker = false
+
+    var body: some View {
+        VStack(spacing: 12) {
+            HStack {
+                Text("Voice Language")
+                    .font(.subheadline)
+                    .foregroundColor(.secondary)
+
+                Spacer()
+
+                if item.manualLanguageOverride != nil {
+                    Text("Manual")
+                        .font(.caption)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
+                        .background(Color.orange.opacity(0.2))
+                        .foregroundColor(.orange)
+                        .cornerRadius(8)
+                }
+            }
+
+            Button {
+                let generator = UIImpactFeedbackGenerator(style: .light)
+                generator.impactOccurred()
+                showingLanguagePicker = true
+            } label: {
+                HStack {
+                    HStack(spacing: 8) {
+                        Image(systemName: "globe")
+                            .foregroundColor(item.type.color)
+
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(item.languageDisplayName)
+                                .font(.body)
+                                .fontWeight(.medium)
+                                .foregroundColor(.primary)
+
+                            if item.manualLanguageOverride == nil {
+                                Text("Auto-detected")
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                            } else {
+                                Text("Manually selected")
+                                    .font(.caption)
+                                    .foregroundColor(.orange)
+                            }
+                        }
+                    }
+
+                    Spacer()
+
+                    Image(systemName: "chevron.right")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+                .padding()
+                .background(Color(.systemGray6))
+                .cornerRadius(12)
+            }
+        }
+        .sheet(isPresented: $showingLanguagePicker) {
+            LanguagePickerSheet(item: item)
+                .environmentObject(contentStore)
+                .environmentObject(audioPlayer)
+        }
+    }
+}
+
+// MARK: - Language Picker Sheet
+
+struct LanguagePickerSheet: View {
+    let item: ContentItem
+    @EnvironmentObject var contentStore: ContentStore
+    @EnvironmentObject var audioPlayer: AudioPlayerManager
+    @Environment(\.dismiss) var dismiss
+
+    var body: some View {
+        NavigationView {
+            List {
+                Section {
+                    Button {
+                        resetToAutoDetect()
+                    } label: {
+                        HStack {
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text("Auto-detect Language")
+                                    .font(.body)
+                                    .foregroundColor(.primary)
+
+                                Text("Detected: \(item.detectedLanguage.uppercased()) - \(Locale(identifier: "en").localizedString(forLanguageCode: item.detectedLanguage)?.capitalized ?? item.detectedLanguage)")
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                            }
+
+                            Spacer()
+
+                            if item.manualLanguageOverride == nil {
+                                Image(systemName: "checkmark")
+                                    .foregroundColor(.blue)
+                            }
+                        }
+                    }
+                } header: {
+                    Text("Automatic")
+                }
+
+                Section {
+                    ForEach(ContentItem.supportedLanguages, id: \.code) { language in
+                        Button {
+                            setLanguage(language.code)
+                        } label: {
+                            HStack {
+                                Text(language.name)
+                                    .foregroundColor(.primary)
+
+                                Spacer()
+
+                                if item.manualLanguageOverride == language.code {
+                                    Image(systemName: "checkmark")
+                                        .foregroundColor(.blue)
+                                }
+                            }
+                        }
+                    }
+                } header: {
+                    Text("Manual Selection")
+                } footer: {
+                    Text("If the auto-detected language is incorrect, you can manually select the correct language here.")
+                }
+            }
+            .navigationTitle("Select Language")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button("Done") {
+                        dismiss()
+                    }
+                }
+            }
+        }
+    }
+
+    private func setLanguage(_ languageCode: String) {
+        let generator = UINotificationFeedbackGenerator()
+        generator.notificationOccurred(.success)
+
+        var updatedItem = item
+        updatedItem.manualLanguageOverride = languageCode
+        contentStore.updateItem(updatedItem)
+
+        // If this is the currently playing item, restart playback with new language
+        if audioPlayer.currentItem?.id == item.id {
+            let currentPosition = audioPlayer.currentPosition
+            let wasPlaying = audioPlayer.isPlaying
+            audioPlayer.stop()
+            if wasPlaying {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                    audioPlayer.play(updatedItem, from: currentPosition)
+                }
+            } else {
+                audioPlayer.currentItem = updatedItem
+            }
+        }
+    }
+
+    private func resetToAutoDetect() {
+        let generator = UINotificationFeedbackGenerator()
+        generator.notificationOccurred(.success)
+
+        var updatedItem = item
+        updatedItem.manualLanguageOverride = nil
+        contentStore.updateItem(updatedItem)
+
+        // If this is the currently playing item, restart playback with auto-detected language
+        if audioPlayer.currentItem?.id == item.id {
+            let currentPosition = audioPlayer.currentPosition
+            let wasPlaying = audioPlayer.isPlaying
+            audioPlayer.stop()
+            if wasPlaying {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                    audioPlayer.play(updatedItem, from: currentPosition)
+                }
+            } else {
+                audioPlayer.currentItem = updatedItem
+            }
+        }
     }
 }
 

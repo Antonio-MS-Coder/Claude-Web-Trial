@@ -320,8 +320,8 @@ class AudioPlayerManager: NSObject, ObservableObject {
         totalCharacters = Double(item.extractedText.count)
         currentCharacterIndex = item.duration > 0 ? (position / item.duration) * totalCharacters : 0
 
-        // Select voice based on detected language
-        let voiceForContent = selectBestVoice(for: item.detectedLanguage)
+        // Select voice based on effective language (manual override or detected)
+        let voiceForContent = selectBestVoice(for: item.effectiveLanguage)
 
         let newUtterance = AVSpeechUtterance(string: item.extractedText)
         newUtterance.voice = voiceForContent
@@ -330,7 +330,8 @@ class AudioPlayerManager: NSObject, ObservableObject {
         newUtterance.volume = 0.95 // Slightly softer for comfort
         newUtterance.preUtteranceDelay = 0.1 // Small pause before starting
 
-        print("🎵 Playing '\(item.title)' in \(item.detectedLanguage.uppercased()) with voice: \(voiceForContent.name)")
+        let languageSource = item.manualLanguageOverride != nil ? "manual" : "auto-detected"
+        print("🎵 Playing '\(item.title)' in \(item.effectiveLanguage.uppercased()) (\(languageSource)) with voice: \(voiceForContent.name)")
 
         utterance = newUtterance
         synthesizer.speak(newUtterance)
