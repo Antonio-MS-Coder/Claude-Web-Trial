@@ -21,6 +21,7 @@
 		A1000019 /* ContentStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000018 /* ContentStore.swift */; };
 		A100001B /* MiniPlayerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100001A /* MiniPlayerView.swift */; };
 		A100001D /* OnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100001C /* OnboardingView.swift */; };
+		A100001F /* DocumentPicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100001E /* DocumentPicker.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -39,6 +40,7 @@
 		A1000018 /* ContentStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentStore.swift; sourceTree = "<group>"; };
 		A100001A /* MiniPlayerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MiniPlayerView.swift; sourceTree = "<group>"; };
 		A100001C /* OnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingView.swift; sourceTree = "<group>"; };
+		A100001E /* DocumentPicker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DocumentPicker.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -89,6 +91,7 @@
 				A1000016 /* AddContentView.swift */,
 				A100001A /* MiniPlayerView.swift */,
 				A100001C /* OnboardingView.swift */,
+				A100001E /* DocumentPicker.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -190,6 +193,7 @@
 				A1000019 /* ContentStore.swift in Sources */,
 				A100001B /* MiniPlayerView.swift in Sources */,
 				A100001D /* OnboardingView.swift in Sources */,
+				A100001F /* DocumentPicker.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

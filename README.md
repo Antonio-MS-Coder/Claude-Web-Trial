@@ -173,6 +173,7 @@ Completed:
 - [x] Auto-play next feature
 - [x] Smart error messages
 - [x] Beautiful loading states
+- [x] PDF document picker and import
 
 Future enhancements planned:
 - [ ] Full CarPlay native UI
@@ -188,10 +189,9 @@ Future enhancements planned:
 
 ## Known Limitations
 
-1. **PDF Import**: Currently requires implementation of document picker (placeholder in UI)
-2. **Web Extraction**: Basic HTML parsing; may not work perfectly with all websites
-3. **OCR Accuracy**: Depends on image quality and text clarity
-4. **Playback Position**: Estimated based on text length (not exact timing)
+1. **Web Extraction**: Basic HTML parsing; may not work perfectly with all websites
+2. **OCR Accuracy**: Depends on image quality and text clarity
+3. **Playback Position**: Estimated based on text length (not exact timing)
 
 ## Contributing
 

@@ -19,6 +19,7 @@ struct AddContentView: View {
     @State private var showingFilePicker = false
     @State private var showingImagePicker = false
     @State private var selectedImage: PhotosPickerItem?
+    @State private var selectedPDFURL: URL?
     @State private var isProcessing = false
     @State private var errorMessage: String?
     @State private var showingError = false
@@ -47,7 +48,10 @@ struct AddContentView: View {
                         WebInputSection(urlString: $urlString)
 
                     case .pdf:
-                        PDFInputSection(showingFilePicker: $showingFilePicker)
+                        PDFInputSection(
+                            showingFilePicker: $showingFilePicker,
+                            selectedPDFURL: $selectedPDFURL
+                        )
 
                     case .image:
                         ImageInputSection(
@@ -106,6 +110,9 @@ struct AddContentView: View {
             } message: {
                 Text(getActionableErrorMessage())
             }
+            .sheet(isPresented: $showingFilePicker) {
+                DocumentPicker(selectedURL: $selectedPDFURL)
+            }
         }
     }
 
@@ -116,7 +123,7 @@ struct AddContentView: View {
         case .webpage:
             return !urlString.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
         case .pdf:
-            return true
+            return selectedPDFURL != nil
         case .image:
             return selectedImage != nil
         }
@@ -159,8 +166,18 @@ struct AddContentView: View {
                 )
 
             case .pdf:
-                // Note: This is a placeholder. In a real app, you'd get the PDF from a file picker
-                throw ExtractionError.invalidPDF
+                guard let pdfURL = selectedPDFURL else {
+                    throw ExtractionError.invalidPDF
+                }
+
+                let extractedText = try await PDFExtractor.extractText(from: pdfURL)
+                let fileName = pdfURL.deletingPathExtension().lastPathComponent
+
+                item = ContentItem(
+                    title: fileName.isEmpty ? generateTitle(from: extractedText) : fileName,
+                    type: .pdf,
+                    extractedText: extractedText
+                )
 
             case .image:
                 guard let selectedImage = selectedImage else {
@@ -280,18 +297,36 @@ struct WebInputSection: View {
 
 struct PDFInputSection: View {
     @Binding var showingFilePicker: Bool
+    @Binding var selectedPDFURL: URL?
 
     var body: some View {
         VStack(spacing: 16) {
             Button {
+                let generator = UIImpactFeedbackGenerator(style: .light)
+                generator.impactOccurred()
                 showingFilePicker = true
             } label: {
                 HStack {
-                    Image(systemName: "doc.fill")
-                    Text("Select PDF File")
+                    Image(systemName: selectedPDFURL == nil ? "doc.fill" : "doc.text.fill")
+                        .foregroundColor(selectedPDFURL == nil ? .secondary : .blue)
+
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(selectedPDFURL == nil ? "Select PDF File" : "PDF Selected")
+                            .font(.body)
+
+                        if let url = selectedPDFURL {
+                            Text(url.lastPathComponent)
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                                .lineLimit(1)
+                        }
+                    }
+
                     Spacer()
+
                     Image(systemName: "chevron.right")
                         .font(.caption)
+                        .foregroundColor(.secondary)
                 }
                 .padding()
                 .background(Color(.systemGray6))
@@ -299,9 +334,17 @@ struct PDFInputSection: View {
             }
             .foregroundColor(.primary)
 
-            Text("PDF import requires document picker integration")
-                .font(.caption)
-                .foregroundColor(.orange)
+            if selectedPDFURL != nil {
+                HStack {
+                    Image(systemName: "checkmark.circle.fill")
+                        .foregroundColor(.green)
+                        .font(.caption)
+
+                    Text("Ready to extract text")
+                        .font(.caption)
+                        .foregroundColor(.green)
+                }
+            }
         }
     }
 }
