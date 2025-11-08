@@ -274,10 +274,16 @@ struct EmptyLibraryView: View {
 
     var body: some View {
         VStack(spacing: 24) {
-            Image(systemName: "books.vertical")
-                .font(.system(size: 72))
-                .foregroundColor(.secondary)
-                .symbolEffect(.pulse, options: .repeating)
+            if #available(iOS 17.0, *) {
+                Image(systemName: "books.vertical")
+                    .font(.system(size: 72))
+                    .foregroundColor(.secondary)
+                    .symbolEffect(.pulse, options: .repeating)
+            } else {
+                Image(systemName: "books.vertical")
+                    .font(.system(size: 72))
+                    .foregroundColor(.secondary)
+            }
 
             VStack(spacing: 12) {
                 Text("No Content Yet")

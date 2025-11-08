@@ -209,15 +209,50 @@ class AudioPlayerManager: NSObject, ObservableObject {
     }
 
     private func loadAvailableVoices() {
-        // Get high-quality English voices
-        availableVoices = AVSpeechSynthesisVoice.speechVoices()
+        // Get all English voices
+        let allVoices = AVSpeechSynthesisVoice.speechVoices()
             .filter { $0.language.starts(with: "en") }
-            .sorted { $0.name < $1.name }
 
-        // Select a default enhanced quality voice if available
-        selectedVoice = availableVoices.first {
-            $0.quality == .enhanced || $0.quality == .premium
-        } ?? availableVoices.first
+        // Separate by quality
+        let enhancedVoices = allVoices.filter { $0.quality == .enhanced }
+        let premiumVoices = allVoices.filter { $0.quality == .premium }
+        let defaultVoices = allVoices.filter { $0.quality == .default }
+
+        // Store all unique voices, prioritizing enhanced/premium
+        var seenIdentifiers = Set<String>()
+        availableVoices = (enhancedVoices + premiumVoices + defaultVoices).filter { voice in
+            guard !seenIdentifiers.contains(voice.identifier) else { return false }
+            seenIdentifiers.insert(voice.identifier)
+            return true
+        }.sorted { $0.name < $1.name }
+
+        // Select best default voice
+        // Prefer specific high-quality enhanced voices
+        let preferredVoiceNames = ["Samantha", "Alex", "Ava", "Nicky", "Zoe"]
+
+        selectedVoice = enhancedVoices.first { voice in
+            preferredVoiceNames.contains { voice.name.contains($0) }
+        } ?? enhancedVoices.first
+          ?? premiumVoices.first
+          ?? AVSpeechSynthesisVoice(language: "en-US")
+
+        print("🎙️ Selected voice: \(selectedVoice?.name ?? "Unknown") - Quality: \(selectedVoice?.quality.rawValue ?? 0)")
+    }
+
+    // Helper to map user playback rate to optimal AVSpeechUtterance rate
+    private func mapToSpeechRate(_ userRate: Float) -> Float {
+        // AVSpeechUtteranceDefaultSpeechRate is ~0.5
+        // We want to keep rates in the sweet spot (0.4-0.6) for natural sound
+        // Mapping:
+        // 0.75x -> 0.45 (slower, clearer)
+        // 1.0x  -> 0.50 (default, most natural)
+        // 1.25x -> 0.53 (slightly faster but still natural)
+        // 1.5x  -> 0.56 (faster but clear)
+        // 2.0x  -> 0.58 (fast but not robotic)
+
+        let baseRate: Float = 0.5 // AVSpeechUtteranceDefaultSpeechRate
+        let adjustment = (userRate - 1.0) * 0.08 // Gentle scaling
+        return max(0.4, min(0.6, baseRate + adjustment))
     }
 
     func play(_ item: ContentItem, from position: TimeInterval = 0) {
@@ -229,9 +264,10 @@ class AudioPlayerManager: NSObject, ObservableObject {
 
         utterance = AVSpeechUtterance(string: item.extractedText)
         utterance?.voice = selectedVoice ?? AVSpeechSynthesisVoice(language: "en-US")
-        utterance?.rate = playbackRate * 0.5 // AVSpeechUtteranceDefaultSpeechRate
-        utterance?.pitchMultiplier = 1.0
-        utterance?.volume = 1.0
+        utterance?.rate = mapToSpeechRate(playbackRate) // Use natural rate mapping
+        utterance?.pitchMultiplier = 1.0 // Keep natural pitch
+        utterance?.volume = 0.95 // Slightly softer for comfort
+        utterance?.preUtteranceDelay = 0.1 // Small pause before starting
 
         synthesizer.speak(utterance!)
         isPlaying = true

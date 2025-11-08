@@ -1,9 +1,10 @@
 # AudioReader - Listen to Your Content on the Go
 
 <p align="center">
-  <img src="https://img.shields.io/badge/Platform-iOS%2017.0%2B-blue.svg" alt="Platform: iOS 17.0+">
+  <img src="https://img.shields.io/badge/Platform-iOS%2016.0%2B-blue.svg" alt="Platform: iOS 16.0+">
   <img src="https://img.shields.io/badge/Language-Swift%205.9-orange.svg" alt="Swift 5.9">
   <img src="https://img.shields.io/badge/Framework-SwiftUI-green.svg" alt="SwiftUI">
+  <img src="https://img.shields.io/badge/Audio-Enhanced%20Quality-purple.svg" alt="Enhanced Quality Audio">
 </p>
 
 AudioReader is a modern, **human-centric** iOS app that converts various content types into audio, perfect for listening to articles, documents, and text while driving, exercising, or multitasking.
@@ -19,12 +20,13 @@ AudioReader is a modern, **human-centric** iOS app that converts various content
 ### Key Features
 
 #### Audio & Playback
+- **Natural-Sounding Audio** - Optimized speech rate mapping for crystal-clear, natural voice quality
+- **Enhanced Voice Selection** - Automatically selects premium enhanced voices (Samantha, Alex, Ava, etc.)
 - **Background Audio Playback** - Keep listening when the app is backgrounded or screen is locked (perfect for driving!)
 - **Lock Screen Controls** - Full media controls on lock screen and control center
 - **CarPlay Ready** - Remote control support for safe in-car use
-- **High-Quality Text-to-Speech** - Uses Apple's AVSpeechSynthesizer with premium voices
+- **Smart Playback Rate** - Maintains natural sound quality at all speeds (0.75x-2.0x)
 - **Smart Playback Controls** - Play, pause, skip forward/backward (15 seconds)
-- **Variable Speed** - Adjust playback speed from 0.75x to 2.0x
 - **Auto-Play Next** - Automatically continue to next item in queue
 - **Resume Playback** - Automatically saves your position in each content item
 
@@ -83,7 +85,7 @@ AudioReader/
 
 ## Requirements
 
-- iOS 17.0 or later
+- **iOS 16.0 or later** (compatible with iOS 16 and iOS 17+)
 - Xcode 15.0 or later
 - Swift 5.9 or later
 

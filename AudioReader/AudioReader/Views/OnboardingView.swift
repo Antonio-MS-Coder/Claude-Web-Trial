@@ -40,9 +40,16 @@ struct OnboardingView: View {
 
     var body: some View {
         ZStack {
-            // Background gradient
+            // Solid opaque background
+            Color(uiColor: .systemBackground)
+                .ignoresSafeArea()
+
+            // Subtle gradient overlay
             LinearGradient(
-                colors: [Color(.systemBackground), pages[currentPage].iconColor.opacity(0.1)],
+                colors: [
+                    Color.clear,
+                    pages[currentPage].iconColor.opacity(0.12)
+                ],
                 startPoint: .top,
                 endPoint: .bottom
             )

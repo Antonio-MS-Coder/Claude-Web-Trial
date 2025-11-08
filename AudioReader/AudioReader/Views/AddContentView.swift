@@ -346,10 +346,16 @@ struct ProcessingOverlay: View {
                         .fill(contentType.color.opacity(0.2))
                         .frame(width: 80, height: 80)
 
-                    Image(systemName: contentType.icon)
-                        .font(.largeTitle)
-                        .foregroundColor(contentType.color)
-                        .symbolEffect(.pulse, options: .repeating)
+                    if #available(iOS 17.0, *) {
+                        Image(systemName: contentType.icon)
+                            .font(.largeTitle)
+                            .foregroundColor(contentType.color)
+                            .symbolEffect(.pulse, options: .repeating)
+                    } else {
+                        Image(systemName: contentType.icon)
+                            .font(.largeTitle)
+                            .foregroundColor(contentType.color)
+                    }
                 }
 
                 VStack(spacing: 8) {

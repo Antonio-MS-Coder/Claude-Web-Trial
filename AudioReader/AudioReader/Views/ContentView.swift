@@ -51,7 +51,7 @@ struct ContentView: View {
                 OnboardingView(showOnboarding: $showOnboarding)
                     .transition(.opacity)
                     .zIndex(1)
-                    .onChange(of: showOnboarding) { _, newValue in
+                    .onChange(of: showOnboarding) { newValue in
                         if !newValue {
                             hasCompletedOnboarding = true
                         }
