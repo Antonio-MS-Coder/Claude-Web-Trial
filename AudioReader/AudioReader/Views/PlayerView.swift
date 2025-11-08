@@ -43,9 +43,23 @@ struct PlayerView: View {
                                 .multilineTextAlignment(.center)
                                 .lineLimit(3)
 
-                            Text(item.type.rawValue)
+                            HStack(spacing: 8) {
+                                Text(item.type.rawValue)
+                                    .font(.subheadline)
+                                    .foregroundColor(.secondary)
+
+                                Text("•")
+                                    .font(.subheadline)
+                                    .foregroundColor(.secondary)
+
+                                HStack(spacing: 4) {
+                                    Image(systemName: "globe")
+                                        .font(.caption)
+                                    Text(item.languageDisplayName)
+                                }
                                 .font(.subheadline)
                                 .foregroundColor(.secondary)
+                            }
                         }
                         .padding(.horizontal)
 

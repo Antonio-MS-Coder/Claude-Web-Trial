@@ -218,34 +218,77 @@ class AudioPlayerManager: NSObject, ObservableObject {
     }
 
     private func loadAvailableVoices() {
-        // Get all English voices
-        let allVoices = AVSpeechSynthesisVoice.speechVoices()
-            .filter { $0.language.starts(with: "en") }
+        // Get all voices (all languages)
+        availableVoices = AVSpeechSynthesisVoice.speechVoices()
+            .sorted { $0.name < $1.name }
+
+        // Select best default English voice for initial selection
+        selectedVoice = selectBestVoice(for: "en")
+
+        print("🎙️ Available voices: \(availableVoices.count)")
+        print("🎙️ Default selected voice: \(selectedVoice?.name ?? "Unknown") - Language: \(selectedVoice?.language ?? "Unknown")")
+    }
+
+    // Select the best voice for a given language
+    private func selectBestVoice(for languageCode: String) -> AVSpeechSynthesisVoice {
+        // Get all voices for this language
+        let languageVoices = AVSpeechSynthesisVoice.speechVoices()
+            .filter { $0.language.starts(with: languageCode) }
 
         // Separate by quality
-        let enhancedVoices = allVoices.filter { $0.quality == .enhanced }
-        let premiumVoices = allVoices.filter { $0.quality == .premium }
-        let defaultVoices = allVoices.filter { $0.quality == .default }
+        let enhancedVoices = languageVoices.filter { $0.quality == .enhanced }
+        let premiumVoices = languageVoices.filter { $0.quality == .premium }
 
-        // Store all unique voices, prioritizing enhanced/premium
-        var seenIdentifiers = Set<String>()
-        availableVoices = (enhancedVoices + premiumVoices + defaultVoices).filter { voice in
-            guard !seenIdentifiers.contains(voice.identifier) else { return false }
-            seenIdentifiers.insert(voice.identifier)
-            return true
-        }.sorted { $0.name < $1.name }
+        // Language-specific preferred voices
+        var preferredVoiceNames: [String] = []
 
-        // Select best default voice
-        // Prefer specific high-quality enhanced voices
-        let preferredVoiceNames = ["Samantha", "Alex", "Ava", "Nicky", "Zoe"]
+        switch languageCode {
+        case "en":
+            preferredVoiceNames = ["Samantha", "Alex", "Ava", "Nicky", "Zoe"]
+        case "es":
+            // Spanish voices: Prefer Mónica (Spain), Paulina (Mexico), or other high-quality options
+            preferredVoiceNames = ["Monica", "Mónica", "Paulina", "Juan", "Diego", "Isabela"]
+        case "fr":
+            preferredVoiceNames = ["Thomas", "Amélie"]
+        case "de":
+            preferredVoiceNames = ["Anna", "Helena"]
+        case "it":
+            preferredVoiceNames = ["Alice", "Luca"]
+        case "pt":
+            preferredVoiceNames = ["Luciana", "Joana"]
+        default:
+            break
+        }
 
-        selectedVoice = enhancedVoices.first { voice in
+        // Try to find a preferred enhanced voice
+        if let voice = enhancedVoices.first(where: { voice in
             preferredVoiceNames.contains { voice.name.contains($0) }
-        } ?? enhancedVoices.first
-          ?? premiumVoices.first
-          ?? AVSpeechSynthesisVoice(language: "en-US")
+        }) {
+            print("🎙️ Selected enhanced voice: \(voice.name) (\(voice.language))")
+            return voice
+        }
 
-        print("🎙️ Selected voice: \(selectedVoice?.name ?? "Unknown") - Quality: \(selectedVoice?.quality.rawValue ?? 0)")
+        // Try any enhanced voice
+        if let voice = enhancedVoices.first {
+            print("🎙️ Selected enhanced voice: \(voice.name) (\(voice.language))")
+            return voice
+        }
+
+        // Try any premium voice
+        if let voice = premiumVoices.first {
+            print("🎙️ Selected premium voice: \(voice.name) (\(voice.language))")
+            return voice
+        }
+
+        // Fallback to first available voice for this language
+        if let voice = languageVoices.first {
+            print("🎙️ Selected fallback voice: \(voice.name) (\(voice.language))")
+            return voice
+        }
+
+        // Ultimate fallback to system default
+        print("⚠️ No voice found for language: \(languageCode), using system default")
+        return AVSpeechSynthesisVoice(language: "\(languageCode)-\(languageCode.uppercased())") ?? AVSpeechSynthesisVoice(language: "en-US")!
     }
 
     // Helper to map user playback rate to optimal AVSpeechUtterance rate
@@ -277,12 +320,17 @@ class AudioPlayerManager: NSObject, ObservableObject {
         totalCharacters = Double(item.extractedText.count)
         currentCharacterIndex = item.duration > 0 ? (position / item.duration) * totalCharacters : 0
 
+        // Select voice based on detected language
+        let voiceForContent = selectBestVoice(for: item.detectedLanguage)
+
         let newUtterance = AVSpeechUtterance(string: item.extractedText)
-        newUtterance.voice = selectedVoice ?? AVSpeechSynthesisVoice(language: "en-US")
+        newUtterance.voice = voiceForContent
         newUtterance.rate = mapToSpeechRate(playbackRate) // Use natural rate mapping
         newUtterance.pitchMultiplier = 1.0 // Keep natural pitch
         newUtterance.volume = 0.95 // Slightly softer for comfort
         newUtterance.preUtteranceDelay = 0.1 // Small pause before starting
+
+        print("🎵 Playing '\(item.title)' in \(item.detectedLanguage.uppercased()) with voice: \(voiceForContent.name)")
 
         utterance = newUtterance
         synthesizer.speak(newUtterance)

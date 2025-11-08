@@ -20,8 +20,9 @@ AudioReader is a modern, **human-centric** iOS app that converts various content
 ### Key Features
 
 #### Audio & Playback
+- **Multi-Language Support** - Automatic language detection with native voices for Spanish, English, French, German, Italian, Portuguese, and more
 - **Natural-Sounding Audio** - Optimized speech rate mapping for crystal-clear, natural voice quality
-- **Enhanced Voice Selection** - Automatically selects premium enhanced voices (Samantha, Alex, Ava, etc.)
+- **Smart Voice Selection** - Automatically selects the best premium enhanced voice for detected language (e.g., Mónica/Paulina for Spanish, Samantha/Alex for English)
 - **Background Audio Playback** - Keep listening when the app is backgrounded or screen is locked (perfect for driving!)
 - **Lock Screen Controls** - Full media controls on lock screen and control center
 - **CarPlay Ready** - Remote control support for safe in-car use
@@ -32,6 +33,7 @@ AudioReader is a modern, **human-centric** iOS app that converts various content
 
 #### User Experience
 - **Intuitive Onboarding** - Beautiful first-time experience explaining key features
+- **Language Indicators** - Visual badges showing detected language in library and player views
 - **Mini Player** - Quick access player stays at bottom while browsing library
 - **Haptic Feedback** - Tactile responses for all interactions
 - **Smooth Animations** - Spring-based animations throughout
@@ -148,9 +150,11 @@ xcodebuild -project AudioReader.xcodeproj -scheme AudioReader -configuration Deb
 
 AudioReader leverages Apple's on-device intelligence features:
 
+- **Automatic Language Detection**: NSLinguisticTagger analyzes content to automatically detect language (Spanish, English, French, German, Italian, Portuguese, and more)
+- **Smart Voice Selection**: Automatically selects the best native voice for detected language with quality prioritization (Enhanced > Premium > Default)
 - **Vision Framework**: Advanced OCR for accurate text recognition from images
 - **Natural Language Processing**: Used in text extraction and title generation
-- **AVSpeechSynthesizer**: High-quality, natural-sounding voices with enhanced quality options
+- **AVSpeechSynthesizer**: High-quality, natural-sounding voices with language-specific enhanced quality options
 - **On-Device Processing**: All processing happens on-device for privacy and speed
 
 ## Privacy & Security
@@ -174,6 +178,8 @@ Completed:
 - [x] Smart error messages
 - [x] Beautiful loading states
 - [x] PDF document picker and import
+- [x] Multi-language support with automatic detection
+- [x] Smart voice selection for Spanish, English, French, German, Italian, Portuguese, etc.
 
 Future enhancements planned:
 - [ ] Full CarPlay native UI

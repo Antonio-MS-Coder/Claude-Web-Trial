@@ -211,11 +211,22 @@ struct ContentItemRow: View {
                     .font(.subheadline)
                     .foregroundColor(.secondary)
 
-                HStack {
-                    Image(systemName: "clock")
-                        .font(.caption)
-                    Text(item.formattedDuration)
-                        .font(.caption)
+                HStack(spacing: 12) {
+                    HStack(spacing: 4) {
+                        Image(systemName: "clock")
+                            .font(.caption)
+                        Text(item.formattedDuration)
+                            .font(.caption)
+                    }
+
+                    HStack(spacing: 4) {
+                        Image(systemName: "globe")
+                            .font(.caption)
+                        Text(item.detectedLanguage.uppercased())
+                            .font(.caption)
+                            .fontWeight(.medium)
+                    }
+                    .foregroundColor(item.type.color)
 
                     if item.lastPlayedPosition > 0 {
                         Spacer()

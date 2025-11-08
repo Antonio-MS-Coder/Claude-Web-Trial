@@ -42,6 +42,7 @@ struct ContentItem: Identifiable, Codable, Equatable {
     var duration: TimeInterval // Estimated duration in seconds
     var lastPlayedPosition: TimeInterval
     var isFavorite: Bool
+    var detectedLanguage: String // ISO language code (e.g., "en", "es")
 
     init(id: UUID = UUID(),
          title: String,
@@ -50,7 +51,8 @@ struct ContentItem: Identifiable, Codable, Equatable {
          dateAdded: Date = Date(),
          duration: TimeInterval = 0,
          lastPlayedPosition: TimeInterval = 0,
-         isFavorite: Bool = false) {
+         isFavorite: Bool = false,
+         detectedLanguage: String? = nil) {
         self.id = id
         self.title = title
         self.type = type
@@ -59,6 +61,7 @@ struct ContentItem: Identifiable, Codable, Equatable {
         self.duration = duration > 0 ? duration : Self.estimateDuration(for: extractedText)
         self.lastPlayedPosition = lastPlayedPosition
         self.isFavorite = isFavorite
+        self.detectedLanguage = detectedLanguage ?? Self.detectLanguage(from: extractedText)
     }
 
     // Estimate audio duration based on text length (avg 150 words per minute)
@@ -67,9 +70,36 @@ struct ContentItem: Identifiable, Codable, Equatable {
         return Double(wordCount) / 150.0 * 60.0 // Convert to seconds
     }
 
+    // Detect language using NSLinguisticTagger
+    static func detectLanguage(from text: String) -> String {
+        // Need a reasonable sample for accurate detection
+        let sampleText = String(text.prefix(min(500, text.count)))
+
+        guard !sampleText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+            return "en" // Default to English for empty text
+        }
+
+        let tagger = NSLinguisticTagger(tagSchemes: [.language], options: 0)
+        tagger.string = sampleText
+
+        let language = tagger.dominantLanguage ?? "en"
+
+        // Extract just the language code (e.g., "es" from "es-ES")
+        let languageCode = language.split(separator: "-").first.map(String.init) ?? "en"
+
+        print("🌍 Detected language: \(languageCode) for text sample: \(sampleText.prefix(50))...")
+
+        return languageCode
+    }
+
     var formattedDuration: String {
         let minutes = Int(duration) / 60
         let seconds = Int(duration) % 60
         return String(format: "%d:%02d", minutes, seconds)
+    }
+
+    var languageDisplayName: String {
+        let locale = Locale(identifier: "en")
+        return locale.localizedString(forLanguageCode: detectedLanguage)?.capitalized ?? detectedLanguage.uppercased()
     }
 }
