@@ -42,6 +42,15 @@ class AudioPlayerManager: NSObject, ObservableObject {
         setupNotifications()
     }
 
+    deinit {
+        // Clean up resources to prevent memory leaks
+        timer?.invalidate()
+        timer = nil
+        NotificationCenter.default.removeObserver(self)
+        synthesizer.stopSpeaking(at: .immediate)
+        print("🧹 AudioPlayerManager deallocated")
+    }
+
     private func setupAudioSession() {
         do {
             // Enable background audio playback
@@ -175,18 +184,18 @@ class AudioPlayerManager: NSObject, ObservableObject {
             return renderer.image { context in
                 // Draw gradient background
                 let colors = [item.type.color.withAlphaComponent(0.6), item.type.color]
-                let gradient = CGGradient(
+                if let gradient = CGGradient(
                     colorsSpace: CGColorSpaceCreateDeviceRGB(),
                     colors: colors.map { $0.cgColor } as CFArray,
                     locations: [0.0, 1.0]
-                )!
-
-                context.cgContext.drawLinearGradient(
-                    gradient,
-                    start: .zero,
-                    end: CGPoint(x: size.width, y: size.height),
-                    options: []
-                )
+                ) {
+                    context.cgContext.drawLinearGradient(
+                        gradient,
+                        start: .zero,
+                        end: CGPoint(x: size.width, y: size.height),
+                        options: []
+                    )
+                }
 
                 // Draw icon
                 let iconConfig = UIImage.SymbolConfiguration(pointSize: 200, weight: .semibold)
@@ -258,18 +267,25 @@ class AudioPlayerManager: NSObject, ObservableObject {
     func play(_ item: ContentItem, from position: TimeInterval = 0) {
         stop()
 
+        // Guard against empty text
+        guard !item.extractedText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+            print("⚠️ Cannot play item with empty text")
+            return
+        }
+
         currentItem = item
         totalCharacters = Double(item.extractedText.count)
-        currentCharacterIndex = (position / item.duration) * totalCharacters
+        currentCharacterIndex = item.duration > 0 ? (position / item.duration) * totalCharacters : 0
 
-        utterance = AVSpeechUtterance(string: item.extractedText)
-        utterance?.voice = selectedVoice ?? AVSpeechSynthesisVoice(language: "en-US")
-        utterance?.rate = mapToSpeechRate(playbackRate) // Use natural rate mapping
-        utterance?.pitchMultiplier = 1.0 // Keep natural pitch
-        utterance?.volume = 0.95 // Slightly softer for comfort
-        utterance?.preUtteranceDelay = 0.1 // Small pause before starting
+        let newUtterance = AVSpeechUtterance(string: item.extractedText)
+        newUtterance.voice = selectedVoice ?? AVSpeechSynthesisVoice(language: "en-US")
+        newUtterance.rate = mapToSpeechRate(playbackRate) // Use natural rate mapping
+        newUtterance.pitchMultiplier = 1.0 // Keep natural pitch
+        newUtterance.volume = 0.95 // Slightly softer for comfort
+        newUtterance.preUtteranceDelay = 0.1 // Small pause before starting
 
-        synthesizer.speak(utterance!)
+        utterance = newUtterance
+        synthesizer.speak(newUtterance)
         isPlaying = true
 
         startPositionTimer()

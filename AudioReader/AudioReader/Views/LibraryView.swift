@@ -123,7 +123,6 @@ struct LibraryView: View {
                 // Mini Player
                 if audioPlayer.currentItem != nil {
                     MiniPlayerView(showFullPlayer: $showFullPlayer)
-                        .padding(.bottom, audioPlayer.currentItem != nil ? 0 : -100)
                 }
             }
             .overlay {
